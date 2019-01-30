@@ -1,0 +1,137 @@
+<html>
+<head>
+    <style>
+        body {
+            background: #000;
+        }
+
+        .canvas {
+            margin: .1em;
+        }
+
+    </style>
+    <script src="jquery.js"></script>
+    <script>
+        $(window).ready(function () {
+            for (var x = 0; x < 16; x++) {
+                addGlyph();
+            }
+        });
+
+        var lineWidth = 10;
+
+        function Rect(x, y, w, h) {
+            this.x = x;
+            this.y = y;
+            this.w = w;
+            this.h = h;
+        }
+
+        Rect.prototype.adjust = function(l, t, r, b) {
+            this.x += l;
+            this.y += t;
+            this.w += -l + r;
+            this.h += -t + b;
+        };
+
+        Rect.prototype.right = function() { return this.x + this.w; };
+        Rect.prototype.bottom = function() { return this.y + this.h; };
+
+
+        function randInt(minVal, maxVal) {
+            return minVal + Math.floor(Math.random() * (maxVal - minVal))
+        }
+
+        function randFrom(arr) {
+            var idx = randInt(0, arr.length);
+            return arr[idx];
+        }
+
+        function addGlyph() {
+            var content = $("#content");
+
+            var c = $("<canvas class='canvas'/>");
+            content.append(c);
+            var ctx = c[0].getContext("2d");
+
+            var w = 200;
+            var h = 200;
+
+            var margin = lineWidth * 3;
+
+            ctx.canvas.width = w;
+            ctx.canvas.height = h;
+
+
+            ctx.beginPath();
+            ctx.rect(0, 0, ctx.canvas.width, ctx.canvas.height);
+            ctx.fillStyle = "#333";
+            ctx.fill();
+
+            ctx.lineWidth = lineWidth;
+            ctx.lineCap = "round";
+            ctx.fillStyle = "#FFF";
+            ctx.strokeStyle = "#FFF";
+
+            var rec = new Rect(margin, margin, w - margin * 2, h - margin * 2);
+
+            quadrant(ctx, new Rect(rec.x, rec.y, rec.w / 2, rec.h / 2));
+            quadrant(ctx, new Rect(rec.x + rec.w / 2, rec.y, rec.w / 2, rec.h / 2));
+            quadrant(ctx, new Rect(rec.x, rec.y + rec.h / 2, rec.w / 2, rec.h / 2));
+            quadrant(ctx, new Rect(rec.x + rec.w / 2, rec.y + rec.w / 2, rec.w / 2, rec.h / 2));
+        }
+
+        function drawArc(ctx, rec)
+        {
+            switch (randInt(0, 4)) {
+                case 0:
+                    ctx.arc(rec.x, rec.y, rec.w, 0, .5 * Math.PI);
+                    break;
+                case 1:
+                    ctx.arc(rec.x, rec.y + rec.h, rec.w, -.5 * Math.PI, 0);
+                    break;
+                case 2:
+                    ctx.arc(rec.x + rec.w, rec.y + rec.h, rec.w, Math.PI, -.5 * Math.PI);
+                    break;
+                case 3:
+                    ctx.arc(rec.x + rec.w, rec.y, rec.w, .5 * Math.PI, Math.PI);
+                    break;
+            }
+            ctx.stroke();
+        }
+
+        function drawDiagonal(ctx, rec)
+        {
+            switch (randInt(0, 2)) {
+                case 0:
+                    ctx.moveTo(rec.x, rec.y);
+                    ctx.lineTo(rec.right(), rec.bottom());
+                    break;
+                case 1:
+                    ctx.moveTo(rec.right(), rec.y);
+                    ctx.lineTo(rec.x, rec.bottom());
+                    break;
+            }
+            ctx.stroke();
+        }
+
+        function drawDot(ctx, rec)
+        {
+            ctx.arc(rec.x + rec.w / 2, rec.y + rec.h / 2, lineWidth *.9, 0, 2 * Math.PI);
+            ctx.fill();
+        }
+
+        var shapeFuncs = [drawArc, drawDiagonal, drawDot];
+
+        function quadrant(ctx, rec) {
+
+            ctx.beginPath();
+            randFrom(shapeFuncs)(ctx, rec);
+        }
+
+    </script>
+</head>
+<body>
+<div id="content"></div>
+</body>
+</html>
