@@ -2,7 +2,7 @@
 <head>
     <style>
         body {
-            background: #000;
+            background: #222;
         }
 
         .canvas {
@@ -17,7 +17,8 @@
 
         var avgsize = (w + h) / 200;
         var lineWidth = avgsize * 8;
-        var count = 150;
+        var count = 400;
+
 
         $(window).ready(function () {
             for (var x = 0; x < count; x++) {
@@ -25,6 +26,19 @@
             }
         });
 
+        Math.random = (function () {
+            var seed = 0x2F6E2B1;
+            return function () {
+                // Robert Jenkins’ 32 bit integer hash function
+                seed = ((seed + 0x7ED55D16) + (seed << 12)) & 0xFFFFFFFF;
+                seed = ((seed ^ 0xC761C23C) ^ (seed >>> 19)) & 0xFFFFFFFF;
+                seed = ((seed + 0x165667B1) + (seed << 5)) & 0xFFFFFFFF;
+                seed = ((seed + 0xD3A2646C) ^ (seed << 9)) & 0xFFFFFFFF;
+                seed = ((seed + 0xFD7046C5) + (seed << 3)) & 0xFFFFFFFF;
+                seed = ((seed ^ 0xB55A4F09) ^ (seed >>> 16)) & 0xFFFFFFFF;
+                return (seed & 0xFFFFFFF) / 0x10000000;
+            };
+        }());
 
         function Rect(x, y, w, h) {
             this.x = x;
@@ -47,6 +61,17 @@
             return this.y + this.h;
         };
 
+        function lerp(a, b, t) {
+            return a + (b - a) * t;
+        }
+
+        function lerpArray(a, b, t) {
+            ret = [];
+            for (var i = 0; i < a.length; i++) {
+                ret.push(lerp(a[i], b[i], t))
+            }
+            return ret;
+        }
 
         function randInt(minVal, maxVal) {
             return minVal + Math.floor(Math.random() * (maxVal - minVal))
@@ -60,10 +85,9 @@
         function addGlyph() {
             var content = $("#content");
 
-            var c = $("<canvas class='canvas'/>");
+            var c = $("<canvas class='canvas' id='glyph'/>");
             content.append(c);
             var ctx = c[0].getContext("2d");
-
 
             var margin = lineWidth * 2;
 
@@ -103,10 +127,12 @@
                     break;
             }
             ctx.stroke();
+
+            // drawDiagonal(ctx, rec);
         }
 
         function drawArc(ctx, rec) {
-            switch (randInt(0, 4)) {
+            switch (randInt(0, 8)) {
                 case 0:
                     ctx.arc(rec.x, rec.y, rec.w, 0, .5 * Math.PI);
                     break;
@@ -124,27 +150,58 @@
         }
 
         function drawDiagonal(ctx, rec) {
-            switch (randInt(0, 4)) {
+            var pts = [];
+            switch (randInt(0, 5)) {
                 case 0:
-                    ctx.moveTo(rec.x, rec.y);
-                    ctx.lineTo(rec.right(), rec.bottom());
+                    pts = [
+                        rec.x,
+                        rec.y,
+                        rec.right(),
+                        rec.bottom()
+                    ];
                     break;
                 case 1:
-                    ctx.moveTo(rec.right(), rec.y);
-                    ctx.lineTo(rec.x, rec.bottom());
+                    pts = [
+                        rec.right(),
+                        rec.y,
+                        rec.x,
+                        rec.bottom()
+                    ];
                     break;
                 case 2:
-                    ctx.moveTo(rec.x + rec.w / 2, rec.y);
-                    ctx.lineTo(rec.x + rec.w / 2, rec.bottom());
+                    pts = [
+                        rec.x + rec.w / 2,
+                        rec.y,
+                        rec.x + rec.w / 2,
+                        rec.bottom()
+                    ];
                     break;
                 case 3:
-                    ctx.moveTo(rec.x, rec.y + rec.h / 2);
-                    ctx.lineTo(rec.right(), rec.y + rec.h / 2);
+                    pts = [
+                        rec.x,
+                        rec.y + rec.h / 2,
+                        rec.right(),
+                        rec.y + rec.h / 2
+                    ];
             }
+            if (pts.length === 0)
+                return;
+
+            var ta = Math.random() * 0.1;
+            var tb = 1 - Math.random() * 0.1;
+            var p1 = pts.slice(0, 2);
+
+            var p2 = pts.slice(2, 4);
+            p1 = lerpArray(p1, p2, ta);
+            p2 = lerpArray(p1, p2, tb);
+            ctx.moveTo(p1[0], p1[1]);
+            ctx.lineTo(p2[0], p2[1]);
             ctx.stroke();
         }
 
         function drawDot(ctx, rec) {
+            if (Math.random() < 0.5)
+                return;
             ctx.arc(rec.x + rec.w / 2, rec.y + rec.h / 2, lineWidth * .9, 0, 2 * Math.PI);
             ctx.fill();
         }
